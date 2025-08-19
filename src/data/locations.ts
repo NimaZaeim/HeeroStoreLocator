@@ -2,13 +2,13 @@ import { Location } from '../type/location';
 
 
 export async function loadLocations(): Promise<Location[]> {
-	const boschResponse = await fetch('/src/assets/bosch_car_service_mapbox.geojson');
+	const boschResponse = await fetch('/bosch_car_service_mapbox.geojson');
 	const boschGeoJson = await boschResponse.json();
-	const mercedesResponse = await fetch('/src/assets/mercedes_benz_van_service_mapbox.geojson');
+	const mercedesResponse = await fetch('/mercedes_benz_van_service_mapbox.geojson');
 	const mercedesGeoJson = await mercedesResponse.json();
-	const serviceExcellenceResponse = await fetch('/src/assets/Service_Excellence_Center.geojson');
+	const serviceExcellenceResponse = await fetch('/Service_Excellence_Center.geojson');
 	const serviceExcellenceGeoJson = await serviceExcellenceResponse.json();
-	const certifiedHubResponse = await fetch('/src/assets/Certified_HEERO_Hubs.geojson');
+	const certifiedHubResponse = await fetch('/Certified_HEERO_Hubs.geojson');
 	const certifiedHubGeoJson = await certifiedHubResponse.json();
 
 	function parseGeoJsonFeatures(features: any[], type: Location['type']): Location[] {
