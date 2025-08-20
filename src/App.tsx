@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 import MapComponent from './components/MapComponent';
 import LocationSidebar from './components/LocationSidebar.tsx';
-import { loadLocations } from './data/locations';
+import { fetchLocations } from './utils/fetchLocations';
 import type { Location, MapFilters } from './type/location';
 
 function App() {
@@ -38,16 +38,36 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    setLoading(true);
-    loadLocations()
-      .then((locs) => {
-        setLocations(locs);
-        setLoading(false);
-      })
-      .catch((err) => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const locs = await fetchLocations();
+        // Sort locations to prioritize HEERO locations
+        const sortedLocs = [...locs].sort((a, b) => {
+          // Priority order: service_excellence, certified_hub, bosch, mercedes
+          const priority = {
+            'service_excellence': 0,
+            'certified_hub': 1,
+            'bosch': 2,
+            'mercedes': 3
+          };
+          return priority[a.type] - priority[b.type];
+        });
+        setLocations(sortedLocs);
+      } catch (error) {
         setError('Failed to load locations');
+        console.error('Error loading locations:', error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    
+    loadData();
+    
+    // Set up periodic refresh every 5 minutes
+    const refreshInterval = setInterval(loadData, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const handleLocationSelect = (location: Location | null) => {
