@@ -87,7 +87,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="h-screen flex bg-gray-100 border-8 border-blue-500">
+  <div className="h-screen flex flex-col md:flex-row bg-gray-100">
         <LocationSidebar
           locations={locations}
           selectedLocation={selectedLocation}
@@ -95,7 +95,7 @@ function App() {
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
-        <div className="flex-1">
+        <div className="flex-1 min-h-[300px]">
           <MapComponent
             locations={locations}
             selectedLocation={selectedLocation}

@@ -1,3 +1,34 @@
+/* Responsive layout for sidebar and map */
+@media (max-width: 768px) {
+  .md\:w-96 {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .md\:h-full {
+    height: auto !important;
+    min-height: 300px !important;
+    max-height: 60vh !important;
+  }
+  .md\:flex-row {
+    flex-direction: column !important;
+  }
+  .md\:border-8 {
+    border-width: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+  .p-6 {
+    padding: 1rem !important;
+  }
+  .w-96 {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
