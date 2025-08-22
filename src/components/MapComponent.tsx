@@ -20,7 +20,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const customMarkers = useRef<mapboxgl.Marker[]>([]);
   const popup = useRef<mapboxgl.Popup | null>(null);
-  const [showLegend, setShowLegend] = useState(true);
+  const [showLegend, setShowLegend] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768; // Open by default on desktop (md+), closed on mobile
+    }
+    return true;
+  });
   const [mapView, setMapView] = useState<{center: [number, number], zoom: number}>({center: [8.5417, 47.3769], zoom: 6});
 
   // Filter locations based on current filters

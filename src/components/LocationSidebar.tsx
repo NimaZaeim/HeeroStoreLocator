@@ -29,7 +29,7 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
   filters,
   onFiltersChange
 }) => {
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
   const filteredLocations = locations.filter(location => {
     const matchesType = (
       (filters.showServiceExcellence && location.type === 'service_excellence') ||
@@ -59,7 +59,7 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
   }, [selectedLocation]);
 
   return (
-    <div className="w-full md:w-96 bg-white shadow-xl flex flex-col h-[300px] md:h-full max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-y-auto">
+    <div className="w-full md:w-96 bg-white shadow-xl flex flex-col h-[40vh] md:h-full overflow-y-auto">
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Service Locations</h1>

@@ -102,7 +102,7 @@ function App() {
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
-        <div className="flex-1 min-h-[300px]">
+        <div className="h-[60vh] md:flex-1 md:h-auto md:min-h-[300px]">
           <MapComponent
             locations={locations}
             selectedLocation={selectedLocation}

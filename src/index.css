@@ -4,12 +4,7 @@
     width: 100% !important;
     min-width: 0 !important;
   }
-  .md\:h-full {
-    height: auto !important;
-    min-height: 300px !important;
-    max-height: 60vh !important;
-  }
-  .md\:flex-row {
+    .md\:flex-row {
     flex-direction: column !important;
   }
   .md\:border-8 {
