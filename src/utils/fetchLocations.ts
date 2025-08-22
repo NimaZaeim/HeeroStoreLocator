@@ -42,8 +42,8 @@ export async function fetchLocations(): Promise<Location[]> {
               const category = row.Category?.toLowerCase() || '';
               const type = category.includes('bosch') ? 'bosch' :
                           category.includes('mercedes') ? 'mercedes' :
-                          category.includes('service excellence') ? 'service_excellence' :
-                          category.includes('certified heero hub') ? 'certified_hub' : 'bosch';
+                          (category.includes('service excellence') || category.includes('heero motors excellence center')) ? 'service_excellence' :
+                          (category.includes('certified heero hub') || category.includes('heero hub')) ? 'certified_hub' : 'bosch';
               
               // Debug logging for type detection
               console.log('Processing row:', {

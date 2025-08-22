@@ -70,6 +70,13 @@ function App() {
     return () => clearInterval(refreshInterval);
   }, []);
 
+  React.useEffect(() => {
+    if (locations.length > 0 && !selectedLocation) {
+      const initial = locations.find(l => (l.companyName || '').trim() === 'Bosch Car Service Peter Schlichtling e.K.');
+      if (initial) setSelectedLocation(initial);
+    }
+  }, [locations, selectedLocation]);
+
   const handleLocationSelect = (location: Location | null) => {
     setSelectedLocation(location);
   };

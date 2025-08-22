@@ -93,7 +93,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         'certified_hub': 1,
         'bosch': 2,
         'mercedes': 3
-      };
+      } as const;
       return priority[a.type] - priority[b.type];
     });
 
@@ -115,16 +115,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
       let iconSvg = '';
       if (location.type === 'service_excellence') {
         size = 48;
-        iconSvg = `<svg width="48" height="48" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#F49D16"/></g></svg>`;
+        iconSvg = `<svg width="48" height="48" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
       } else if (location.type === 'certified_hub') {
         size = 36;
-        iconSvg = `<svg width="36" height="36" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#F49D16"/></g></svg>`;
+        iconSvg = `<svg width="36" height="36" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
       } else if (location.type === 'bosch') {
         size = 32;
-        iconSvg = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="black"/></g></svg>`;
+        iconSvg = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#A1A49F"/></g></svg>`;
       } else if (location.type === 'mercedes') {
         size = 32;
-        iconSvg = `<svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M64 192C64 141.078 84.2285 92.2425 120.235 56.2355C156.242 20.2285 205.078 0 256 0C306.922 0 355.758 20.2285 391.764 56.2355C427.771 92.2425 448 141.078 448 192C448 320 256 512 256 512C256 512 64 320 64 192ZM176 192C176 213.217 184.429 233.566 199.431 248.569C214.434 263.571 234.783 272 256 272C277.217 272 297.566 263.571 312.569 248.569C327.571 233.566 336 213.217 336 192C336 170.783 327.571 150.434 312.569 135.431C297.566 120.429 277.217 112 256 112C234.783 112 214.434 120.429 199.431 135.431C184.429 150.434 176 170.783 176 192Z" fill="red"/></svg>`;
+        iconSvg = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#1E3A8A"/></g></svg>`;
       }
       el.innerHTML = iconSvg;
       el.style.width = `${size}px`;
@@ -201,19 +201,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
     switch (selectedLocation.type) {
       case 'bosch':
         categoryName = 'Bosch Car Service';
-        categoryClass = 'bg-red-100 text-red-800';
+        categoryClass = 'bg-gray-100 text-gray-700';
         break;
       case 'mercedes':
         categoryName = 'Mercedes-Benz Van Service';
-        categoryClass = 'bg-gray-100 text-gray-800';
+        categoryClass = 'bg-gray-100 text-gray-700';
         break;
       case 'service_excellence':
-        categoryName = 'Service Excellence Center HEERO MOTORS';
-        categoryClass = 'bg-orange-100 text-[#F49D16]';
+        categoryName = 'HEERO Motors Excellence Center';
+        categoryClass = 'bg-gray-100 text-gray-700';
         break;
       case 'certified_hub':
-        categoryName = 'Certified HEERO Hubs';
-        categoryClass = 'bg-orange-100 text-[#F49D16]';
+        categoryName = 'HEERO Hub';
+        categoryClass = 'bg-gray-100 text-gray-700';
         break;
       default:
         categoryName = '';
@@ -224,16 +224,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       <div class="p-4 max-w-sm">
         <h3 class="font-bold text-lg mb-2 text-gray-800">${selectedLocation.companyName || ''}</h3>
         <div class="space-y-2 text-sm">
-          <p class="flex items-start gap-2">
-            <span class="text-gray-500 min-w-0">📍</span>
-            <span class="text-gray-700">${selectedLocation.address || ''}</span>
-          </p>
-          ${selectedLocation.phoneNumber ? `
-            <p class="flex items-center gap-2">
-              <span class="text-gray-500">📞</span>
-              <a href="tel:${selectedLocation.phoneNumber}" class="text-blue-600 hover:underline">${selectedLocation.phoneNumber}</a>
-            </p>
-          ` : ''}
           ${selectedLocation.url1 ? `
             <p class="flex items-center gap-2">
               <span class="text-gray-500">🌐</span>
@@ -244,13 +234,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <span class="inline-block px-2 py-1 text-xs rounded-full ${categoryClass}">
               ${categoryName}
             </span>
-            ${selectedLocation.rating ? `
-              <span class="flex items-center gap-1 text-xs text-yellow-700 font-medium">
-                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.966a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.393c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.966z"/></svg>
-                ${selectedLocation.rating}
-                ${selectedLocation.reviewCount ? `<span class="ml-1 text-gray-500">(${selectedLocation.reviewCount} Reviews)</span>` : ''}
-              </span>
-            ` : ''}
             ${selectedLocation.subcategories && selectedLocation.subcategories.length > 0 ? `
               <span class="flex items-center gap-1 text-xs text-blue-700 font-medium">
                 <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a2 2 0 00-2 2v2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-3V4a2 2 0 00-2-2zm0 2h2v2h-2V4zm-5 4h10v8H5V8z"/></svg>
@@ -295,7 +278,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <div className="w-6 h-6 flex items-center justify-center">
                 <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g clipPath="url(#clip0_337_28)">
-                    <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#F49D16"/>
+                    <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/>
                   </g>
                   <defs>
                     <clipPath id="clip0_337_28">
@@ -304,14 +287,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </defs>
                 </svg>
               </div>
-              <span className="text-sm text-gray-700">Service Excellence Center HEERO MOTORS</span>
+              <span className="text-sm text-gray-700">HEERO Motors Excellence Center</span>
             </div>
             {/* Certified HEERO Hubs */}
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 flex items-center justify-center">
                 <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g clipPath="url(#clip0_337_28)">
-                    <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#F49D16"/>
+                    <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/>
                   </g>
                   <defs>
                     <clipPath id="clip0_337_28">
@@ -320,7 +303,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </defs>
                 </svg>
               </div>
-              <span className="text-sm text-gray-700">Certified HEERO Hubs</span>
+              <span className="text-sm text-gray-700">HEERO Hub</span>
             </div>
             {/* Bosch Car Service */}
             <div className="flex items-center gap-3">
@@ -328,7 +311,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 <span className="w-6 h-6 block"> 
                   <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clipPath="url(#clip0_337_28)">
-                      <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="black"/>
+                      <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#A1A49F"/>
                     </g>
                     <defs>
                       <clipPath id="clip0_337_28">
@@ -343,8 +326,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
             {/* Mercedes-Benz Van Service */}
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 flex items-center justify-center">
-                <svg width="24" height="24" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M64 192C64 141.078 84.2285 92.2425 120.235 56.2355C156.242 20.2285 205.078 0 256 0C306.922 0 355.758 20.2285 391.764 56.2355C427.771 92.2425 448 141.078 448 192C448 320 256 512 256 512C256 512 64 320 64 192ZM176 192C176 213.217 184.429 233.566 199.431 248.569C214.434 263.571 234.783 272 256 272C277.217 272 297.566 263.571 312.569 248.569C327.571 233.566 336 213.217 336 192C336 170.783 327.571 150.434 312.569 135.431C297.566 120.429 277.217 112 256 112C234.783 112 214.434 120.429 199.431 135.431C184.429 150.434 176 170.783 176 192Z" fill="red"/>
+                <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <g clipPath="url(#clip0_337_28)">
+                    <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#1E3A8A"/>
+                  </g>
+                  <defs>
+                    <clipPath id="clip0_337_28">
+                      <rect width="130" height="130" fill="white"/>
+                    </clipPath>
+                  </defs>
                 </svg>
               </div>
               <span className="text-sm text-gray-700">Mercedes-Benz Van Service</span>
