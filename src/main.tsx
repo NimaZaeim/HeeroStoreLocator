@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react';
+import React from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -9,8 +9,6 @@ if (!rootElement) {
   console.error('Root element not found!');
 } else {
   createRoot(rootElement).render(
-    <StrictMode>
       <App />
-    </StrictMode>
   );
 }

@@ -9,19 +9,17 @@ export function parseCSVData(csvText: string): Location[] {
     const coordinates = values[3] || '';
     const [lat, lng] = coordinates.split(',').map(coord => parseFloat(coord.trim()));
     
-    // Determine type based on search query
-    const searchQuery = values[6] || '';
-    const type = searchQuery.toLowerCase().includes('mercedes') ? 'mercedes' : 'bosch';
+    // Determine type based on Category/Name instead of search query
+    const nameOrCategory = `${values[5] || ''} ${values[6] || ''}`.toLowerCase();
+    const type = nameOrCategory.includes('mercedes') ? 'mercedes' : 'bosch';
     
     return {
       id: `location-${index}`,
       city: values[0] || 'Unknown City',
       url1: values[1] || '',
       address: values[2] || '',
-      coordinates: coordinates,
       phoneNumber: values[4] || '',
       companyName: values[5] || '',
-      searchQuery: searchQuery,
       lat: isNaN(lat) ? 0 : lat,
       lng: isNaN(lng) ? 0 : lng,
       type: type as 'bosch' | 'mercedes'

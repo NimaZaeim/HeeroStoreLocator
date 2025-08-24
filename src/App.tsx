@@ -30,60 +30,75 @@ function App() {
     showBosch: true,
     showMercedes: true,
     showServiceExcellence: true,
-    showCertifiedHub: true,
-    searchTerm: ''
+    showCertifiedHub: true
   });
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   React.useEffect(() => {
-    const loadData = async () => {
+    const CACHE_KEY = 'locations_cache_v1';
+    const TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+    const sortLocs = (locs: Location[]) => {
+      const priority: Record<Location['type'], number> = {
+        service_excellence: 0,
+        certified_hub: 1,
+        bosch: 2,
+        mercedes: 3,
+      };
+      return [...locs].sort((a, b) => priority[a.type] - priority[b.type]);
+    };
+
+    const loadFromCache = () => {
       try {
-        setLoading(true);
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return false;
+        const cached = JSON.parse(raw) as { timestamp: number; data: Location[] };
+        const isFresh = Date.now() - cached.timestamp < TTL_MS;
+        if (cached.data && cached.data.length) {
+          setLocations(sortLocs(cached.data));
+          setLoading(false);
+          return isFresh;
+        }
+      } catch {}
+      return false;
+    };
+
+    const fetchAndUpdate = async () => {
+      try {
         const locs = await fetchLocations();
-        // Sort locations to prioritize HEERO locations
-        const sortedLocs = [...locs].sort((a, b) => {
-          // Priority order: service_excellence, certified_hub, bosch, mercedes
-          const priority = {
-            'service_excellence': 0,
-            'certified_hub': 1,
-            'bosch': 2,
-            'mercedes': 3
-          };
-          return priority[a.type] - priority[b.type];
-        });
+        const sortedLocs = sortLocs(locs);
         setLocations(sortedLocs);
+        setError(null);
+        setLoading(false);
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: locs }));
+        } catch {}
       } catch (error) {
         setError('Failed to load locations');
         console.error('Error loading locations:', error);
-      } finally {
         setLoading(false);
       }
     };
-    
-    loadData();
-    
-    // Set up periodic refresh every 5 minutes
-    const refreshInterval = setInterval(loadData, 5 * 60 * 1000);
-    
+
+    setLoading(true);
+    loadFromCache(); // Serve cache immediately if available
+    fetchAndUpdate(); // Revalidate in background
+
+    // periodic refresh every 5 minutes
+    const refreshInterval = setInterval(fetchAndUpdate, 5 * 60 * 1000);
     return () => clearInterval(refreshInterval);
   }, []);
 
-  React.useEffect(() => {
-    if (locations.length > 0 && !selectedLocation) {
-      const initial = locations.find(l => (l.companyName || '').trim() === 'Bosch Car Service Peter Schlichtling e.K.');
-      if (initial) setSelectedLocation(initial);
-    }
-  }, [locations, selectedLocation]);
-
-  const handleLocationSelect = (location: Location | null) => {
+  
+  const handleLocationSelect = React.useCallback((location: Location | null) => {
     setSelectedLocation(location);
-  };
+  }, []);
 
-  const handleFiltersChange = (newFilters: typeof filters) => {
+  const handleFiltersChange = React.useCallback((newFilters: typeof filters) => {
     setFilters(newFilters);
-  };
+  }, []);
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen text-xl">Loading locations...</div>;
@@ -102,7 +117,7 @@ function App() {
           filters={filters}
           onFiltersChange={handleFiltersChange}
         />
-        <div className="h-[60vh] md:flex-1 md:h-auto md:min-h-[300px]">
+        <div className="flex-1 min-h-[300px]">
           <MapComponent
             locations={locations}
             selectedLocation={selectedLocation}

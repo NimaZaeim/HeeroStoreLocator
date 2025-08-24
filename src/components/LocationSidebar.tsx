@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Globe, Filter } from 'lucide-react';
 import type { Location } from '../type/location';
 
@@ -11,43 +11,43 @@ interface LocationSidebarProps {
     showMercedes: boolean;
     showServiceExcellence: boolean;
     showCertifiedHub: boolean;
-    searchTerm: string;
   };
   onFiltersChange: (filters: {
     showBosch: boolean;
     showMercedes: boolean;
     showServiceExcellence: boolean;
     showCertifiedHub: boolean;
-    searchTerm: string;
   }) => void;
 }
 
-const LocationSidebar: React.FC<LocationSidebarProps> = ({
+const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
   locations,
   selectedLocation,
   onLocationSelect,
   filters,
   onFiltersChange
 }) => {
-  const [showFilters, setShowFilters] = useState(false);
-  const filteredLocations = locations.filter(location => {
+  const [showFilters, setShowFilters] = useState(true);
+  const [showLocations, setShowLocations] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 768; // open on md+ by default, closed on mobile
+    }
+    return true;
+  });
+  const filteredLocations = useMemo(() => locations.filter(location => {
     const matchesType = (
       (filters.showServiceExcellence && location.type === 'service_excellence') ||
       (filters.showCertifiedHub && location.type === 'certified_hub') ||
       (filters.showBosch && location.type === 'bosch') ||
       (filters.showMercedes && location.type === 'mercedes')
     );
-    const matchesSearch = filters.searchTerm === '' || 
-      (location.city && location.city.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
-      (location.companyName && location.companyName.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
-      (location.address && location.address.toLowerCase().includes(filters.searchTerm.toLowerCase()));
-    return matchesType && matchesSearch;
-  });
+    return matchesType;
+  }), [locations, filters]);
 
-  const serviceExcellenceCount = locations.filter(l => l.type === 'service_excellence').length;
-  const certifiedHubCount = locations.filter(l => l.type === 'certified_hub').length;
-  const boschCount = locations.filter(l => l.type === 'bosch').length;
-  const mercedesCount = locations.filter(l => l.type === 'mercedes').length;
+  const serviceExcellenceCount = useMemo(() => locations.filter(l => l.type === 'service_excellence').length, [locations]);
+  const certifiedHubCount = useMemo(() => locations.filter(l => l.type === 'certified_hub').length, [locations]);
+  const boschCount = useMemo(() => locations.filter(l => l.type === 'bosch').length, [locations]);
+  const mercedesCount = useMemo(() => locations.filter(l => l.type === 'mercedes').length, [locations]);
 
   // Refs for each location row
   const locationRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -59,12 +59,12 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
   }, [selectedLocation]);
 
   return (
-    <div className="w-full md:w-96 bg-white shadow-xl flex flex-col h-[40vh] md:h-full overflow-y-auto">
+    <div className={`w-full md:w-96 bg-white shadow-xl flex flex-col ${showLocations ? 'h-[40vh]' : 'h-auto'} md:h-full ${showLocations ? 'overflow-y-auto' : ''}`}>
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Service Locations</h1>
         
-        {/* Search Bar hidden per request */}
+        {/* Search removed as requested */}
 
         {/* Filters */}
         <div className="space-y-3">
@@ -206,7 +206,15 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
         </div>
       </div>
 
-      {/* Location List */}
+      {/* Locations dropdown toggle */}
+      <div className="px-6 py-3 border-t border-gray-200 flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none" onClick={() => setShowLocations(prev => !prev)}>
+        <span className="font-medium">Locations</span>
+        <svg className={`w-3 h-3 ml-1 transition-transform ${showLocations ? '' : 'rotate-[-90deg]'}`} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 8l4 4 4-4" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+
+      {showLocations && (
       <div className="flex-1 overflow-y-auto">
         {filteredLocations.length === 0 ? (
           <div className="p-6 text-center">
@@ -292,14 +300,7 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
                               ? 'HEERO Motors Excellence Center'
                               : 'HEERO Hub'}
                       </span>
-                      {/* Subcategories */}
-                      {location.subcategories && location.subcategories.length > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-blue-700 font-medium">
-                          <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a2 2 0 00-2 2v2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-3V4a2 2 0 00-2-2zm0 2h2v2h-2V4zm-5 4h10v8H5V8z"/></svg>
-                          {location.subcategories.slice(0,2).join(', ')}
-                          {location.subcategories.length > 2 && <span className="ml-1">...</span>}
-                        </span>
-                      )}
+                      {/* Subcategories removed */}
                     </div>
                   </div>
                 </div>
@@ -308,8 +309,9 @@ const LocationSidebar: React.FC<LocationSidebarProps> = ({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
 
-export default LocationSidebar;
+export default React.memo(LocationSidebarComponent);

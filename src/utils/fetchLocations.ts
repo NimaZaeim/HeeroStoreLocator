@@ -13,8 +13,7 @@ interface SheetRow {
   Rating: string;
   'Review Count': string;
   Subcategories: string;
-  'Search Query': string;
-  'Phone Number': string;
+    'Phone Number': string;
   City: string;
 }
 
@@ -27,15 +26,11 @@ export async function fetchLocations(): Promise<Location[]> {
       Papa.parse<SheetRow>(csv, {
         header: true,
         complete: (results) => {
-          // Debug logging
-          console.log('Raw data from sheet:', results.data);
-          
           const locations: Location[] = results.data
             .filter(row => {
+              // Skip empty rows and ones without coordinates
+              if (!row || (!row.Latitude && !row.Longitude)) return false;
               const hasCoords = row.Latitude && row.Longitude;
-              if (!hasCoords) {
-                console.log('Row missing coordinates:', row);
-              }
               return hasCoords;
             })
             .map((row, index) => {
@@ -44,13 +39,6 @@ export async function fetchLocations(): Promise<Location[]> {
                           category.includes('mercedes') ? 'mercedes' :
                           (category.includes('service excellence') || category.includes('heero motors excellence center')) ? 'service_excellence' :
                           (category.includes('certified heero hub') || category.includes('heero hub')) ? 'certified_hub' : 'bosch';
-              
-              // Debug logging for type detection
-              console.log('Processing row:', {
-                category: row.Category,
-                detectedType: type,
-                name: row.Name,
-              });
               
               return {
                 id: `location-${index}`,
@@ -62,19 +50,11 @@ export async function fetchLocations(): Promise<Location[]> {
                 url1: row.Website || '',
                 rating: row.Rating ? parseFloat(row.Rating) : undefined,
                 reviewCount: row['Review Count'] ? parseInt(row['Review Count']) : undefined,
-                subcategories: row.Subcategories ? row.Subcategories.split(',').map(s => s.trim()) : undefined,
-                searchQuery: row['Search Query'] || null,
+                // subcategories: row.Subcategories ? row.Subcategories.split(',').map(s => s.trim()) : undefined,
                 phoneNumber: row['Phone Number'] || null,
                 city: row.City || null
               };
             });
-
-          // Debug log final locations
-          console.log('Final locations:', locations.map(l => ({
-            type: l.type,
-            name: l.companyName,
-            coords: [l.lat, l.lng]
-          })));
 
           resolve(locations.filter(loc => loc.lat !== 0 && loc.lng !== 0));
         },

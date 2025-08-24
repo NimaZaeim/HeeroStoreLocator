@@ -5,13 +5,12 @@ export interface Location {
   address: string | null;
   phoneNumber: string | number | null;
   companyName: string | null;
-  searchQuery: string | null;
-  lat: number;
+    lat: number;
   lng: number;
   type: 'bosch' | 'mercedes' | 'service_excellence' | 'certified_hub';
   rating?: number;
   reviewCount?: number;
-  subcategories?: string[];
+  // subcategories?: string[];
 }
 
 export interface MapFilters {
@@ -19,5 +18,4 @@ export interface MapFilters {
   showMercedes: boolean;
   showServiceExcellence: boolean;
   showCertifiedHub: boolean;
-  searchTerm: string;
 }

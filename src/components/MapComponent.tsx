@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Location, MapFilters } from '../type/location';
 
 interface MapComponentProps {
@@ -18,7 +17,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const customMarkers = useRef<mapboxgl.Marker[]>([]);
+  const SOURCE_ID = 'locations';
+  const CLUSTER_ICON_LAYER_ID = 'cluster-icons';
+  const UNCLUSTERED_LAYER_ID = 'unclustered-icons';
+  const geojsonRef = useRef<any>({ type: 'FeatureCollection', features: [] as any[] });
   const popup = useRef<mapboxgl.Popup | null>(null);
   const [showLegend, setShowLegend] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -26,44 +28,169 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
     return true;
   });
-  const [mapView, setMapView] = useState<{center: [number, number], zoom: number}>({center: [8.5417, 47.3769], zoom: 6});
+  // Europe default view
+  const [mapView, setMapView] = useState<{center: [number, number], zoom: number}>({center: [10, 50], zoom: 4});
 
-  // Filter locations based on current filters
-  const filteredLocations = locations.filter(location => {
+  // Filter locations based on current filters (memoized)
+  const filteredLocations = React.useMemo(() => locations.filter(location => {
     const matchesType = (
       (filters.showBosch && location.type === 'bosch') ||
       (filters.showMercedes && location.type === 'mercedes') ||
       (filters.showServiceExcellence && location.type === 'service_excellence') ||
       (filters.showCertifiedHub && location.type === 'certified_hub')
     );
-    const matchesSearch = filters.searchTerm === '' || 
-      (location.city && location.city.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
-      (location.companyName && location.companyName.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
-      (location.address && location.address.toLowerCase().includes(filters.searchTerm.toLowerCase()));
-    return matchesType && matchesSearch;
-  });
+    return matchesType;
+  }), [locations, filters]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
     mapboxgl.accessToken = 'pk.eyJ1IjoiaGVlcm9tb3RvcnMiLCJhIjoiY21lYjBkcHZrMHlxbTJpczVpcWp1MWU4eCJ9.oZNeZQUubzoLd_MZ84jbbQ';
 
+    const europeBounds: mapboxgl.LngLatBoundsLike = [
+      [-10.0, 36.5], // SW: tight Atlantic/North Africa buffer
+      [30.0, 70.0]   // NE: Scandinavia/western Russia buffer; excludes Middle East
+    ];
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/heeromotors/cmecq6mnd00gy01s6h1ri6hwd',
       center: mapView.center,
-      zoom: mapView.zoom
+      zoom: mapView.zoom,
+      minZoom: 3.9, // keep Europe as main focus; prevent zooming out too far
+      maxBounds: europeBounds,
+      renderWorldCopies: false
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // Change cursor on hover over markers
-    map.current.on('mouseenter', ['mercedes-benz-van-services', 'bosch-car-services'], () => {
-      map.current!.getCanvas().style.cursor = 'pointer';
-    });
+    // Build source and layers once the style has loaded
+    map.current.on('load', () => {
+      // Initialize source with current filtered data
+      const initialData = toGeoJSON(filteredLocations);
+      geojsonRef.current = initialData;
+      map.current!.addSource(SOURCE_ID, {
+        type: 'geojson',
+        data: initialData,
+        cluster: true,
+        clusterRadius: 50,
+        clusterMaxZoom: 14,
+        clusterProperties: {
+          priority: ['min', ['get', 'priority']]
+        }
+      } as any);
 
-    map.current.on('mouseleave', ['mercedes-benz-van-services', 'bosch-car-services'], () => {
-      map.current!.getCanvas().style.cursor = '';
+      
+      
+      // Icons for clusters and unclustered points (no counts), with collision avoidance and priority
+      (async () => {
+        const rasterizeSvg = (svg: string, size: number) => new Promise<ImageData>((resolve) => {
+          const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.trim());
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d')!;
+            ctx.clearRect(0, 0, size, size);
+            ctx.drawImage(img, 0, 0, size, size);
+            resolve(ctx.getImageData(0, 0, size, size));
+          };
+          img.src = url;
+        });
+
+        const addIcon = async (name: string, svg: string, size: number) => {
+          if (map.current!.hasImage(name)) return;
+          const imageData = await rasterizeSvg(svg, size);
+          map.current!.addImage(name, imageData, { pixelRatio: 1 });
+        };
+
+        const svgService = `<svg width="48" height="48" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
+        const svgHub = `<svg width="36" height="36" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
+        const svgBosch = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#A1A49F"/></g></svg>`;
+        const svgMercedes = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#1E3A8A"/></g></svg>`;
+
+        await Promise.all([
+          addIcon('icon-service', svgService, 48),
+          addIcon('icon-hub', svgHub, 36),
+          addIcon('icon-bosch', svgBosch, 32),
+          addIcon('icon-mercedes', svgMercedes, 32),
+        ]);
+
+        // Cluster icons layer (shows a single icon per cluster based on highest priority)
+        map.current!.addLayer({
+          id: CLUSTER_ICON_LAYER_ID,
+          type: 'symbol',
+          source: SOURCE_ID,
+          filter: ['has', 'point_count'],
+          layout: {
+            'icon-image': ['match', ['get', 'priority'], 0, 'icon-service', 1, 'icon-hub', 2, 'icon-bosch', 3, 'icon-mercedes', 'icon-mercedes'],
+            'symbol-sort-key': ['get', 'priority']
+          }
+        } as any);
+
+        // Unclustered icons layer
+        map.current!.addLayer({
+          id: UNCLUSTERED_LAYER_ID,
+          type: 'symbol',
+          source: SOURCE_ID,
+          filter: ['!', ['has', 'point_count']],
+          layout: {
+            'icon-image': ['get', 'icon'],
+            'symbol-sort-key': ['get', 'priority']
+          }
+        } as any);
+      })();
+
+      
+      // Click cluster icon to zoom in
+      map.current!.on('click', CLUSTER_ICON_LAYER_ID, (e) => {
+        const features = map.current!.queryRenderedFeatures(e.point, { layers: [CLUSTER_ICON_LAYER_ID] });
+        const clusterId = features[0]?.properties?.cluster_id as number | undefined;
+        const source = map.current!.getSource(SOURCE_ID) as (mapboxgl.GeoJSONSource & { getClusterExpansionZoom?: (id: number, cb: (err: any, zoom: number) => void) => void });
+        if (!source || clusterId === undefined || typeof source.getClusterExpansionZoom !== 'function') return;
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err) return;
+          const center = (features[0].geometry as any).coordinates as [number, number];
+          map.current!.easeTo({ center, zoom });
+        });
+      });
+
+      // Click unclustered to select
+      map.current!.on('click', UNCLUSTERED_LAYER_ID, (e) => {
+        const feature = e.features?.[0] as any;
+        if (!feature) return;
+        const p = feature.properties || {};
+        const sel: Location = {
+          id: p.id,
+          type: p.type,
+          companyName: p.companyName || null,
+          address: p.address || null,
+          lat: parseFloat(p.lat),
+          lng: parseFloat(p.lng),
+          url1: p.url1 || '',
+          rating: p.rating ? parseFloat(p.rating) : undefined,
+          reviewCount: p.reviewCount ? parseInt(p.reviewCount) : undefined,
+          // subcategories: p.subcategories ? JSON.parse(p.subcategories) : undefined,
+          phoneNumber: p.phoneNumber || null,
+          city: p.city || null
+        };
+        onLocationSelect(sel);
+      });
+
+      // Pointer cursor for icons
+      map.current!.on('mouseenter', CLUSTER_ICON_LAYER_ID, () => {
+        map.current!.getCanvas().style.cursor = 'pointer';
+      });
+      map.current!.on('mouseleave', CLUSTER_ICON_LAYER_ID, () => {
+        map.current!.getCanvas().style.cursor = '';
+      });
+      map.current!.on('mouseenter', UNCLUSTERED_LAYER_ID, () => {
+        map.current!.getCanvas().style.cursor = 'pointer';
+      });
+      map.current!.on('mouseleave', UNCLUSTERED_LAYER_ID, () => {
+        map.current!.getCanvas().style.cursor = '';
+      });
     });
     return () => {
       if (map.current) {
@@ -72,118 +199,71 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, []);
 
-  // Helper: get pixel distance between two lng/lat at current zoom
-  function getPixelDistance(lngLat1: [number, number], lngLat2: [number, number]): number {
-    if (!map.current) return 0;
-    const p1 = map.current.project(lngLat1);
-    const p2 = map.current.project(lngLat2);
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-
-  // Efficient marker update function
-  function updateMarkers(locations: Location[]) {
-    // Remove previous markers
-    customMarkers.current.forEach(m => m.remove());
-    customMarkers.current = [];
-
-    const minPixelDistance = 40;
-    const visibleLocations: Location[] = [];
-    
-    // Sort locations by priority for marker visibility
-    const sortedLocations = [...locations].sort((a, b) => {
-      const priority = {
-        'service_excellence': 0,
-        'certified_hub': 1,
-        'bosch': 2,
-        'mercedes': 3
-      } as const;
-      return priority[a.type] - priority[b.type];
+  // Resize map when container size changes (e.g., sidebar collapses/expands)
+  useEffect(() => {
+    if (!mapContainer.current || !map.current) return;
+    let raf = 0;
+    const resize = () => {
+      if (!map.current) return;
+      map.current.resize();
+    };
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(resize);
     });
+    ro.observe(mapContainer.current);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
 
-    sortedLocations.forEach((loc: Location) => {
-      const isTooClose = visibleLocations.some((vloc: Location) => {
-        // Allow HEERO locations to overlap with non-HEERO locations
-        if ((loc.type === 'service_excellence' || loc.type === 'certified_hub') &&
-            (vloc.type !== 'service_excellence' && vloc.type !== 'certified_hub')) {
-          return false;
+  
+  function toGeoJSON(locs: Location[]) {
+    return {
+      type: 'FeatureCollection',
+      features: locs.map((l) => ({
+        type: 'Feature',
+        properties: {
+          id: l.id,
+          type: l.type,
+          icon: l.type === 'service_excellence' ? 'icon-service' : l.type === 'certified_hub' ? 'icon-hub' : l.type === 'bosch' ? 'icon-bosch' : 'icon-mercedes',
+          priority: l.type === 'service_excellence' ? 0 : l.type === 'certified_hub' ? 1 : l.type === 'bosch' ? 2 : 3,
+          companyName: l.companyName,
+          address: l.address,
+          lat: l.lat,
+          lng: l.lng,
+          url1: l.url1,
+          rating: l.rating ?? null,
+          reviewCount: l.reviewCount ?? null,
+          // subcategories: JSON.stringify(l.subcategories ?? []),
+          phoneNumber: l.phoneNumber,
+          city: l.city
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [l.lng, l.lat]
         }
-        return getPixelDistance([loc.lng, loc.lat], [vloc.lng, vloc.lat]) < minPixelDistance;
-      });
-      if (!isTooClose) visibleLocations.push(loc);
-    });
-
-    visibleLocations.forEach((location: Location) => {
-      const el = document.createElement('div');
-      let size = 32;
-      let iconSvg = '';
-      if (location.type === 'service_excellence') {
-        size = 48;
-        iconSvg = `<svg width="48" height="48" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
-      } else if (location.type === 'certified_hub') {
-        size = 36;
-        iconSvg = `<svg width="36" height="36" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/></g></svg>`;
-      } else if (location.type === 'bosch') {
-        size = 32;
-        iconSvg = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#A1A49F"/></g></svg>`;
-      } else if (location.type === 'mercedes') {
-        size = 32;
-        iconSvg = `<svg width="32" height="32" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#1E3A8A"/></g></svg>`;
-      }
-      el.innerHTML = iconSvg;
-      el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
-      el.style.cursor = 'pointer';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      el.style.background = 'none';
-      el.style.border = 'none';
-      el.style.borderRadius = '50%';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([location.lng, location.lat])
-        .addTo(map.current!);
-      customMarkers.current.push(marker);
-      el.addEventListener('click', () => {
-        onLocationSelect(location);
-      });
-    });
+      }))
+    } as any;
   }
 
-  // Attach zoom event listener only once
+  
+  // Update source data when filteredLocations change
   useEffect(() => {
     if (!map.current) return;
-    const handleZoom = () => {
-      updateMarkers(filteredLocations);
-    };
-    map.current.on('zoomend', handleZoom);
-    return () => {
-      map.current?.off('zoomend', handleZoom);
-    };
-  }, [filteredLocations]); // Add filteredLocations as a dependency
-
-  // Update markers only when filteredLocations change
-  useEffect(() => {
-    updateMarkers(filteredLocations);
+    const src = map.current.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    if (src && (src as any).setData) {
+      const data = toGeoJSON(filteredLocations);
+      geojsonRef.current = data;
+      (src as any).setData(data);
+    }
   }, [filteredLocations]);
 
   useEffect(() => {
     if (!map.current) return;
     // Only fit bounds when filteredLocations change and map is at initial view
-    if (filteredLocations.length > 0) {
-      const currentCenter = map.current.getCenter();
-      const currentZoom = map.current.getZoom();
-      // Only fit bounds if map is at initial view
-      if (currentCenter.lng === 8.5417 && currentCenter.lat === 47.3769 && currentZoom === 6) {
-        const bounds = new mapboxgl.LngLatBounds();
-        filteredLocations.forEach((location: Location) => {
-          bounds.extend([location.lng, location.lat]);
-        });
-        map.current!.fitBounds(bounds, { padding: 50 });
-      }
-    }
+    // do not auto-fit; keep default Europe view unless user interacts
   }, [filteredLocations]);
 
   // Use selectedLocation from props in useEffect
@@ -239,14 +319,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <span class="inline-block px-2 py-1 text-xs rounded-full ${categoryClass}">
               ${categoryName}
             </span>
-            ${selectedLocation.subcategories && selectedLocation.subcategories.length > 0 ? `
-              <span class="flex items-center gap-1 text-xs text-blue-700 font-medium">
-                <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a2 2 0 00-2 2v2H5a2 2 0 00-2 2v8a2 2 0 002 2h10a2 2 0 002-2v-8a2 2 0 00-2-2h-3V4a2 2 0 00-2-2zm0 2h2v2h-2V4zm-5 4h10v8H5V8z"/></svg>
-                ${selectedLocation.subcategories.slice(0,2).join(', ')}
-                ${selectedLocation.subcategories.length > 2 ? '<span class="ml-1">...</span>' : ''}
-              </span>
-            ` : ''}
-          </div>
+                      </div>
         </div>
       </div>
     `;
