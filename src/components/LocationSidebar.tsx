@@ -1,3 +1,10 @@
+// Copyright (c) 2025 Nima Zaeimzadeh. All rights reserved.
+// This app was developed for HEERO Motors.
+// Do not remove this notice.
+//
+// File: LocationSidebar.tsx
+//
+
 import React, { useMemo, useState } from "react";
 import { Filter } from 'lucide-react';
 import type { Location, MapFilters } from '../type/location';

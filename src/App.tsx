@@ -1,3 +1,10 @@
+// Copyright (c) 2025 Nima Zaeimzadeh. All rights reserved.
+// This app was developed for HEERO Motors.
+// Do not remove this notice.
+//
+// File: App.tsx
+//
+
 import React, { useState } from 'react';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; error: any }> {
