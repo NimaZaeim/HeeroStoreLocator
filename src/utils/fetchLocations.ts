@@ -34,15 +34,17 @@ export async function fetchLocations(): Promise<Location[]> {
               return hasCoords;
             })
             .map((row, index) => {
-              const category = row.Category?.toLowerCase() || '';
+              const rawCategory = (row.Category || '').trim();
+              const category = rawCategory.toLowerCase();
               const type = category.includes('bosch') ? 'bosch' :
                           category.includes('mercedes') ? 'mercedes' :
                           (category.includes('service excellence') || category.includes('heero motors excellence center')) ? 'service_excellence' :
-                          (category.includes('certified heero hub') || category.includes('heero hub')) ? 'certified_hub' : 'bosch';
+                          (category.includes('certified heero hub') || category.includes('heero hub')) ? 'certified_hub' : 'other';
               
               return {
                 id: `location-${index}`,
                 type,
+                category: rawCategory,
                 companyName: row.Name || null,
                 address: row.Address || null,
                 lat: parseFloat(row.Latitude) || 0,

@@ -1,19 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import type { Location, MapFilters } from '../type/location';
+import heeroLogo from '../assets/HEERO Logo.svg';
 
 interface MapComponentProps {
   locations: Location[];
   onLocationSelect: (location: Location | null) => void;
   filters: MapFilters;
   selectedLocation: Location | null; // Receive selectedLocation as prop
+  categoryColors: Record<string, string>;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
   locations,
   onLocationSelect,
   filters,
-  selectedLocation // Destructure selectedLocation prop
+  selectedLocation, // Destructure selectedLocation prop
+  categoryColors
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -22,6 +25,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const UNCLUSTERED_LAYER_ID = 'unclustered-icons';
   const geojsonRef = useRef<any>({ type: 'FeatureCollection', features: [] as any[] });
   const popup = useRef<mapboxgl.Popup | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [showLegend, setShowLegend] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth >= 768; // Open by default on desktop (md+), closed on mobile
@@ -33,13 +37,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   // Filter locations based on current filters (memoized)
   const filteredLocations = React.useMemo(() => locations.filter(location => {
-    const matchesType = (
+    const isKnown = (
       (filters.showBosch && location.type === 'bosch') ||
       (filters.showMercedes && location.type === 'mercedes') ||
       (filters.showServiceExcellence && location.type === 'service_excellence') ||
       (filters.showCertifiedHub && location.type === 'certified_hub')
     );
-    return matchesType;
+    const isDynamic = location.type === 'other' && (filters.dynamic[location.category] ?? true);
+    return isKnown || isDynamic;
   }), [locations, filters]);
 
   useEffect(() => {
@@ -66,6 +71,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     // Build source and layers once the style has loaded
     map.current.on('load', () => {
+      setMapReady(true);
       // Initialize source with current filtered data
       const initialData = toGeoJSON(filteredLocations);
       geojsonRef.current = initialData;
@@ -173,7 +179,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           reviewCount: p.reviewCount ? parseInt(p.reviewCount) : undefined,
           // subcategories: p.subcategories ? JSON.parse(p.subcategories) : undefined,
           phoneNumber: p.phoneNumber || null,
-          city: p.city || null
+          city: p.city || null,
+          category: p.category || ''
         };
         onLocationSelect(sel);
       });
@@ -219,6 +226,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, []);
 
   
+  // slug for safe icon IDs
+  function slug(input: string) {
+    return (input || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
   function toGeoJSON(locs: Location[]) {
     return {
       type: 'FeatureCollection',
@@ -227,10 +239,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
         properties: {
           id: l.id,
           type: l.type,
-          icon: l.type === 'service_excellence' ? 'icon-service' : l.type === 'certified_hub' ? 'icon-hub' : l.type === 'bosch' ? 'icon-bosch' : 'icon-mercedes',
-          priority: l.type === 'service_excellence' ? 0 : l.type === 'certified_hub' ? 1 : l.type === 'bosch' ? 2 : 3,
+          icon: l.type === 'other' ? `icon-dyn-${slug(l.category)}` : (l.type === 'service_excellence' ? 'icon-service' : l.type === 'certified_hub' ? 'icon-hub' : l.type === 'bosch' ? 'icon-bosch' : 'icon-mercedes'),
+          priority: l.type === 'other' ? 4 : (l.type === 'service_excellence' ? 0 : l.type === 'certified_hub' ? 1 : l.type === 'bosch' ? 2 : 3),
           companyName: l.companyName,
           address: l.address,
+          category: l.category,
+          color: l.type === 'other' ? (categoryColors[l.category] || '#6B7280') : null,
           lat: l.lat,
           lng: l.lng,
           url1: l.url1,
@@ -247,6 +261,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }))
     } as any;
   }
+
+  
+  // Ensure dynamic icons (HEERO logo on colored circle) are registered for all dynamic categories
+  React.useEffect(() => {
+    if (!map.current || !mapReady) return;
+    const cats = Array.from(new Set(locations.filter(l => l.type === 'other').map(l => l.category)));
+    if (!cats.length) return;
+    const loadLogo = () => new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = heeroLogo as string;
+    });
+    (async () => {
+      let logo: HTMLImageElement;
+      try { logo = await loadLogo(); } catch { return; }
+      for (const cat of cats) {
+        const id = `icon-dyn-${slug(cat)}`;
+        if (map.current!.hasImage(id)) continue;
+        const size = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d')!;
+        const color = categoryColors[cat] || '#6B7280';
+        ctx.clearRect(0, 0, size, size);
+        // draw logo full-size and tint to category color
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(logo, 0, 0, size, size);
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, size, size);
+        ctx.globalCompositeOperation = 'source-over';
+        const imageData = ctx.getImageData(0, 0, size, size);
+        try { map.current!.addImage(id, imageData, { pixelRatio: 1 }); } catch {}
+      }
+    })();
+  }, [locations, categoryColors, mapReady]);
 
   
   // Update source data when filteredLocations change
@@ -283,6 +335,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     let categoryName = '';
     let categoryClass = '';
+    let isDynamic = selectedLocation.type === 'other';
     switch (selectedLocation.type) {
       case 'bosch':
         categoryName = 'Bosch Car Service';
@@ -301,7 +354,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         categoryClass = 'bg-gray-100 text-gray-700';
         break;
       default:
-        categoryName = '';
+        categoryName = selectedLocation.category || '';
         categoryClass = '';
     }
 
@@ -316,10 +369,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </p>
           ` : ''}
           <div class="flex flex-wrap gap-2 items-center mt-2">
-            <span class="inline-block px-2 py-1 text-xs rounded-full ${categoryClass}">
-              ${categoryName}
-            </span>
-                      </div>
+            ${isDynamic ? `
+              <span class="inline-block px-2 py-1 text-xs rounded-full text-white" style="background:${categoryColors[selectedLocation.category] || '#6B7280'}">
+                ${selectedLocation.category}
+              </span>
+            ` : `
+              <span class="inline-block px-2 py-1 text-xs rounded-full ${categoryClass}">
+                ${categoryName}
+              </span>
+            `}
+          </div>
         </div>
       </div>
     `;
@@ -417,6 +476,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
               </div>
               <span className="text-sm text-gray-700">Mercedes-Benz Van Service</span>
             </div>
+          </div>
+          <div className="space-y-2 mt-2">
+            {Array.from(new Set(filteredLocations.filter(l => l.type === 'other').map(l => l.category))).sort().map(cat => (
+              <div className="flex items-center gap-3" key={cat}>
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <span
+                    className="inline-block"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      backgroundColor: categoryColors[cat] || '#6B7280',
+                      WebkitMask: `url(${heeroLogo}) no-repeat center / contain`,
+                      mask: `url(${heeroLogo}) no-repeat center / contain`
+                    }}
+                  />
+                </div>
+                <span className="text-sm text-gray-700">{cat}</span>
+              </div>
+            ))}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-200">
             <p className="text-xs text-gray-500">

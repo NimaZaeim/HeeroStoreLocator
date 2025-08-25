@@ -1,23 +1,15 @@
 import React, { useMemo, useState } from "react";
 import { Globe, Filter } from 'lucide-react';
-import type { Location } from '../type/location';
+import type { Location, MapFilters } from '../type/location';
+import heeroLogo from '../assets/HEERO Logo.svg';
 
 interface LocationSidebarProps {
   locations: Location[];
   selectedLocation: Location | null;
   onLocationSelect: (location: Location) => void;
-  filters: {
-    showBosch: boolean;
-    showMercedes: boolean;
-    showServiceExcellence: boolean;
-    showCertifiedHub: boolean;
-  };
-  onFiltersChange: (filters: {
-    showBosch: boolean;
-    showMercedes: boolean;
-    showServiceExcellence: boolean;
-    showCertifiedHub: boolean;
-  }) => void;
+  filters: MapFilters;
+  onFiltersChange: (filters: MapFilters) => void;
+  categoryColors: Record<string, string>;
 }
 
 const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
@@ -25,7 +17,8 @@ const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
   selectedLocation,
   onLocationSelect,
   filters,
-  onFiltersChange
+  onFiltersChange,
+  categoryColors
 }) => {
   const [showFilters, setShowFilters] = useState(true);
   const [showLocations, setShowLocations] = useState(() => {
@@ -35,19 +28,29 @@ const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
     return true;
   });
   const filteredLocations = useMemo(() => locations.filter(location => {
-    const matchesType = (
+    const isKnown = (
       (filters.showServiceExcellence && location.type === 'service_excellence') ||
       (filters.showCertifiedHub && location.type === 'certified_hub') ||
       (filters.showBosch && location.type === 'bosch') ||
       (filters.showMercedes && location.type === 'mercedes')
     );
-    return matchesType;
+    const isDynamic = location.type === 'other' && (filters.dynamic[location.category] ?? true);
+    return isKnown || isDynamic;
   }), [locations, filters]);
 
   const serviceExcellenceCount = useMemo(() => locations.filter(l => l.type === 'service_excellence').length, [locations]);
   const certifiedHubCount = useMemo(() => locations.filter(l => l.type === 'certified_hub').length, [locations]);
   const boschCount = useMemo(() => locations.filter(l => l.type === 'bosch').length, [locations]);
   const mercedesCount = useMemo(() => locations.filter(l => l.type === 'mercedes').length, [locations]);
+  const dynamicCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    locations.forEach(l => {
+      if (l.type === 'other' && l.category) {
+        counts[l.category] = (counts[l.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [locations]);
 
   // Refs for each location row
   const locationRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -193,6 +196,35 @@ const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
                   </span>
                 </div>
               </label>
+
+              {Object.keys(dynamicCategoryCounts).sort().map((cat) => (
+                <label className="flex items-center gap-3 cursor-pointer group" key={cat}>
+                  <input
+                    type="checkbox"
+                    checked={filters.dynamic[cat] ?? true}
+                    onChange={(e) => onFiltersChange({
+                      ...filters,
+                      dynamic: { ...filters.dynamic, [cat]: e.target.checked }
+                    })}
+                    className="w-4 h-4 border-gray-300 rounded focus:ring-gray-400 text-gray-400"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        backgroundColor: categoryColors[cat] || '#6B7280',
+                        WebkitMask: `url(${heeroLogo}) no-repeat center / contain`,
+                        mask: `url(${heeroLogo}) no-repeat center / contain`
+                      }}
+                    />
+                    <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                      {cat} ({dynamicCategoryCounts[cat]})
+                    </span>
+                  </div>
+                </label>
+              ))}
             </>
           )}
           
@@ -260,18 +292,33 @@ const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
                         </svg>
                       </span>
                     ) : (
-                      <span className="w-6 h-6 flex items-center justify-center"> 
-                        <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <g clipPath="url(#clip0_337_28)">
-                            <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/>
-                          </g>
-                          <defs>
-                            <clipPath id="clip0_337_28">
-                              <rect width="130" height="130" fill="white"/>
-                            </clipPath>
-                          </defs>
-                        </svg>
-                      </span>
+                      location.type === 'other' ? (
+                        <span className="w-6 h-6 flex items-center justify-center">
+                          <span
+                            className="inline-block"
+                            style={{
+                              width: 24,
+                              height: 24,
+                              backgroundColor: categoryColors[location.category] || '#6B7280',
+                              WebkitMask: `url(${heeroLogo}) no-repeat center / contain`,
+                              mask: `url(${heeroLogo}) no-repeat center / contain`
+                            }}
+                          />
+                        </span>
+                      ) : (
+                        <span className="w-6 h-6 flex items-center justify-center"> 
+                          <svg width="24" height="24" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <g clipPath="url(#clip0_337_28)">
+                              <path d="M65 0C29.1 0 0 29.1 0 65C0 100.9 29.1 130 65 130C100.9 130 130 100.9 130 65C130 29.1 100.9 0 65 0ZM65 120C36.5 120 12.7 98.1 10.2 69.7H30V89.7H60V79.7H40V69.7H60V59.7H40V49.7H60V39.7H30V59.7H10.3C13.2 29.5 40.2 7.4 70.4 10.3C96.5 12.9 117.2 33.5 119.7 59.6H100.1V39.6H70.1V49.6H90.1V59.6H70.1V69.6H90.1V79.6H70.1V89.6H100.1V69.6H119.8C117.3 98 93.6 119.9 65 119.9V120Z" fill="#272F39"/>
+                            </g>
+                            <defs>
+                              <clipPath id="clip0_337_28">
+                                <rect width="130" height="130" fill="white"/>
+                              </clipPath>
+                            </defs>
+                          </svg>
+                        </span>
+                      )
                     )}
                   </div>
                   
@@ -289,17 +336,24 @@ const LocationSidebarComponent: React.FC<LocationSidebarProps> = ({
                     )}
 
                     <div className="mt-2 flex flex-wrap gap-2 items-center">
-                      <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {location.type === 'bosch'
-                          ? 'Bosch Car Service'
-                          : location.type === 'mercedes'
-                            ? 'Mercedes-Benz Van Service'
-                            : location.type === 'service_excellence'
-                              ? 'HEERO Motors Excellence Center'
-                              : 'HEERO Hub'}
-                      </span>
+                      {location.type === 'other' ? (
+                        <span
+                          className="inline-block px-2 py-1 text-xs rounded-full text-white"
+                          style={{ backgroundColor: categoryColors[location.category] || '#6B7280' }}
+                        >
+                          {location.category}
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
+                          {location.type === 'bosch'
+                            ? 'Bosch Car Service'
+                            : location.type === 'mercedes'
+                              ? 'Mercedes-Benz Van Service'
+                              : location.type === 'service_excellence'
+                                ? 'HEERO Motors Excellence Center'
+                                : 'HEERO Hub'}
+                        </span>
+                      )}
                       {/* Subcategories removed */}
                     </div>
                   </div>

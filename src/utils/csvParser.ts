@@ -11,9 +11,10 @@ export function parseCSVData(csvText: string): Location[] {
     
     // Determine type based on Category/Name instead of search query
     const nameOrCategory = `${values[5] || ''} ${values[6] || ''}`.toLowerCase();
-    const type = nameOrCategory.includes('mercedes') ? 'mercedes' : 'bosch';
+    const type = (nameOrCategory.includes('mercedes') ? 'mercedes' : 'bosch') as Location['type'];
+    const category = (values[6] || values[5] || '').trim();
     
-    return {
+    const loc: Location = {
       id: `location-${index}`,
       city: values[0] || 'Unknown City',
       url1: values[1] || '',
@@ -22,8 +23,12 @@ export function parseCSVData(csvText: string): Location[] {
       companyName: values[5] || '',
       lat: isNaN(lat) ? 0 : lat,
       lng: isNaN(lng) ? 0 : lng,
-      type: type as 'bosch' | 'mercedes'
+      type,
+      category,
+      rating: undefined,
+      reviewCount: undefined
     };
+    return loc;
   }).filter(location => location.lat !== 0 && location.lng !== 0);
 }
 
