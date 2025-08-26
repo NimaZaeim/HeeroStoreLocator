@@ -1,7 +1,7 @@
 import Papa from 'papaparse';
 import { Location } from '../type/location';
 
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQLHRDFzkLWpZdpaqQ6rZ18-opD1szaCaOPJsKwxGlPx5o49V8BFDOZc6EMMd1YwqMjZgBpA5IuaMDi/pub?output=csv';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1K5ZnYIlXlTO44U9bSoQk3hxJOiBqarSHIGQolk7nQoI/gviz/tq?tqx=out:csv&sheet=all_services';
 
 interface SheetRow {
   Category: string;
